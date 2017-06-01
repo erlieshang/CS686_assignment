@@ -63,6 +63,7 @@ def normalize(factor):
 
 def inference(factorList, queryVariables, orderedListOfHiddenVariables, evidenceList = []):
     nfl = list()
+    # restrict
     if type(evidenceList) == dict:
         for f in factorList:
             tmp = copy.deepcopy(f)
@@ -71,15 +72,31 @@ def inference(factorList, queryVariables, orderedListOfHiddenVariables, evidence
                     tmp = restrict(tmp, k, v)
             if tmp:
                 nfl.append(tmp)
+                print 'restrict', k, tmp.array, tmp.var
     else:
-        nfl = factorList
-    ret = copy.deepcopy(nfl[0])
+        nfl = copy.deepcopy(factorList)
+
+    # sumout the product of relevant factors
+    for v in orderedListOfHiddenVariables:
+        vlist = list()
+        for f in nfl:
+            if v in f.var:
+                vlist.append(f)
+        for f in vlist:
+            nfl.remove(f)
+        new_f = copy.deepcopy(vlist[0])
+        for i in range(1, len(vlist)):
+            new_f = multiply(new_f, vlist[i])
+        new_f = sumout(new_f, v)
+        print 'sumout variable', v, new_f.array, new_f.var
+        nfl.append(new_f)
+
+    # multiply the sumouted factors
+    ret = nfl[0]
     for i in range(1, len(nfl)):
         ret = multiply(ret, nfl[i])
-    for i in orderedListOfHiddenVariables:
-        ret = sumout(ret, i)
-        if ret.var == queryVariables:
-            break
+
+    # normalize
     normalize(ret)
     return ret
 
