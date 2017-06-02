@@ -70,9 +70,10 @@ def inference(factorList, queryVariables, orderedListOfHiddenVariables, evidence
             for (k, v) in evidenceList.items():
                 if k in tmp.var:
                     tmp = restrict(tmp, k, v)
+                    if tmp:
+                        print 'Restriction: replace', f.var, 'with', tmp.var, tmp.array
             if tmp:
                 nfl.append(tmp)
-                print 'restrict', k, tmp.array, tmp.var
     else:
         nfl = copy.deepcopy(factorList)
 
@@ -88,10 +89,13 @@ def inference(factorList, queryVariables, orderedListOfHiddenVariables, evidence
         for i in range(1, len(vlist)):
             new_f = multiply(new_f, vlist[i])
         new_f = sumout(new_f, v)
-        print 'sumout variable', v, new_f.array, new_f.var
+        print 'Add', new_f.var, new_f.array, 'sumout', v
+        print 'Remove', [f.var for f in vlist]
         nfl.append(new_f)
 
     # multiply the sumouted factors
+    print 'Last factors are:', [(f.var, f.array) for f in nfl]
+    print 'multiply them and normalize'
     ret = nfl[0]
     for i in range(1, len(nfl)):
         ret = multiply(ret, nfl[i])
