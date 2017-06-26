@@ -1,6 +1,8 @@
 # Author: erlie.shang@uwaterloo.ca
 import math
 import copy
+import graphviz as gv
+import matplotlib.pyplot as plt
 
 
 class Example(object):
@@ -52,20 +54,22 @@ class DTN(object):
                         p2 += 1
                     else:
                         n2 += 1
+            if p1 + n1 == 0 or p2 + n2 == 0:
+                continue
             remainder = float(p1 + n1) / len(examples) * DTN.info_value(float(p1) / (p1 + n1)) + float(p2 + n2) / len(
                 examples) * DTN.info_value(float(p2) / (p2 + n2))
             if I - remainder > max_ig:
                 max_ig = I - remainder
                 ret = a
-        return [ret, max_ig] if ret is not None else attrs[0]
+        return [ret, max_ig] if ret is not None else [attrs[0], None]
 
     @staticmethod
     def dtl(examples, attrs, depth, max_depth=100, default=None):
         if len(examples) == 0:
             return default
-        elif examples[0] == examples[-1]:
+        elif examples[0].classification == examples[-1].classification:
             return DTN(None, examples[0].classification)
-        elif len(attrs) == 0 or depth >= 100:
+        elif len(attrs) == 0 or depth > max_depth:
             return DTN(None, examples[len(examples) / 2].classification)
         else:
             best = DTN.choose_attr(attrs, examples)
@@ -75,7 +79,7 @@ class DTN(object):
             new_attrs = copy.deepcopy(attrs)
             new_examples = [list(), list()]
             for e in examples:
-                if best in e.attrs:
+                if best[0] in e.attrs:
                     new_examples[0].append(e)
                 else:
                     new_examples[1].append(e)
@@ -85,16 +89,46 @@ class DTN(object):
                                      DTN(None, examples[len(examples) / 2].classification))
             return root
 
-    def display(self):
-        if self is None:
-            return
-        elif self.classification is not None:
-            print "this is a leaf node and it's class is: ", self.classification
+    @staticmethod
+    def add_nodes(graph, nodes):
+        for n in nodes:
+            if isinstance(n, tuple):
+                graph.node(n[0], **n[1])
+            else:
+                graph.node(n)
+        return graph
+
+    @staticmethod
+    def add_edges(graph, edges):
+        for e in edges:
+            if isinstance(e[0], tuple):
+                graph.edge(*e[0], **e[1])
+            else:
+                graph.edge(*e)
+        return graph
+
+    def draw(self):
+        graph = gv.Digraph(format='svg')
+        nodes = list()
+        edges = list()
+        self.get_nodes_and_edges(nodes, edges, 1)
+        graph = DTN.add_nodes(graph, nodes)
+        graph = DTN.add_edges(graph, edges)
+        graph.render('img/decisionTree')
+
+    def get_nodes_and_edges(self, nodes, edges, num):
+        nodes.append(
+            (str(num), {'label': str(self.attr) + ': (' + words[self.attr] + ')\nIG: ' + str(round(self.info_gain, 2))}))
+        edges.append(((str(num), str(2 * num)), {'label': 'Yes'}))
+        edges.append(((str(num), str(2 * num + 1)), {'label': 'No'}))
+        if self.yes_branch.classification is not None:
+            nodes.append((str(2 * num), {'label': 'class: ' + str(self.yes_branch.classification)}))
         else:
-            print "this is an internal node and it's word feature is: ", self.attr
-            print "the information gain is: ", self.info_gain
-            self.yes_branch.display()
-            self.no_branch.display()
+            self.yes_branch.get_nodes_and_edges(nodes, edges, 2 * num)
+        if self.no_branch.classification is not None:
+            nodes.append((str(2 * num + 1), {'label': 'class: ' + str(self.no_branch.classification)}))
+        else:
+            self.no_branch.get_nodes_and_edges(nodes, edges, 2 * num + 1)
 
     def run(self, example):
         if self.classification is not None:
@@ -129,17 +163,35 @@ def load_words():
     words.append('')
     with open('words.txt', 'r') as f:
         for line in f:
-            words.append(line.split())
+            words.append(line.split()[0])
     return words
 
 
 if __name__ == "__main__":
     train = load_data('trainData.txt', 'trainLabel.txt')
     test = load_data('testData.txt', 'testLabel.txt')
-    # words = load_words()
+    words = load_words()
     attrs = range(1, 3567)
-    # examples = load_data('d.txt', 'l.txt')
-    # attrs = range(1, 6)
-    root = DTN.dtl(train, attrs, 0)
-    # root.display()
-    print root.run(test[0])
+    MAX_DEPTH = 30
+    train_accuracy = list()
+    test_accuracy = list()
+    for depth in range(1, MAX_DEPTH + 1):
+        root = DTN.dtl(train, attrs, 0, depth)
+        if depth == 5:
+            root.draw()
+        correct = 0
+        for i in test:
+            if root.run(i) == i.classification:
+                correct += 1
+        print "when max depth is: ", depth, ", the test accuracy rate is: ", float(correct) / len(test)
+        test_accuracy.append(float(correct) / len(test))
+        correct = 0
+        for i in train:
+            if root.run(i) == i.classification:
+                correct += 1
+        print "when max depth is: ", depth, ", the train accuracy rate is: ", float(correct) / len(train)
+        train_accuracy.append(float(correct) / len(train))
+    X = range(1, MAX_DEPTH + 1)
+    plt.plot(X, test_accuracy, color="blue", linewidth=2.5, linestyle="-", label="test")
+    plt.plot(X, train_accuracy, color="red", linewidth=2.5, linestyle="-", label="train")
+    plt.legend(loc='upper left', frameon=False)
