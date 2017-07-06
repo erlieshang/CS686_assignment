@@ -24,7 +24,7 @@ class DTN(object):
         ret = 0
         if p != 0:
             ret = -p * math.log(p, 2)
-        if (1-p) != 0:
+        if (1 - p) != 0:
             ret -= (1 - p) * math.log((1 - p), 2)
         return ret
 
@@ -69,7 +69,7 @@ class DTN(object):
             return default
         elif examples[0].classification == examples[-1].classification:
             return DTN(None, examples[0].classification)
-        elif len(attrs) == 0 or depth > max_depth:
+        elif len(attrs) == 0 or depth >= max_depth:
             return DTN(None, examples[len(examples) / 2].classification)
         else:
             best = DTN.choose_attr(attrs, examples)
@@ -114,11 +114,13 @@ class DTN(object):
         self.get_nodes_and_edges(nodes, edges, 1)
         graph = DTN.add_nodes(graph, nodes)
         graph = DTN.add_edges(graph, edges)
-        graph.render('img/decisionTree')
+        graph.render('decisionTree')
 
     def get_nodes_and_edges(self, nodes, edges, num):
         nodes.append(
-            (str(num), {'label': str(self.attr) + ': (' + words[self.attr] + ')\nIG: ' + str(round(self.info_gain, 2))}))
+            (
+                str(num),
+                {'label': str(self.attr) + ': (' + words[self.attr] + ')\nIG: ' + str(round(self.info_gain, 2))}))
         edges.append(((str(num), str(2 * num)), {'label': 'Yes'}))
         edges.append(((str(num), str(2 * num + 1)), {'label': 'No'}))
         if self.yes_branch.classification is not None:
@@ -149,7 +151,7 @@ def load_data(data, label):
             while data[0] != current:
                 current += 1
                 examples.append(Example())
-            examples[current-1].attrs.append(data[1])
+            examples[current - 1].attrs.append(data[1])
     with open(label, 'r') as f:
         index = 0
         for line in f:
@@ -171,13 +173,13 @@ if __name__ == "__main__":
     train = load_data('trainData.txt', 'trainLabel.txt')
     test = load_data('testData.txt', 'testLabel.txt')
     words = load_words()
-    attrs = range(1, 3567)
-    MAX_DEPTH = 30
+    MAX_DEPTH = 22
     train_accuracy = list()
     test_accuracy = list()
     for depth in range(1, MAX_DEPTH + 1):
+        attrs = range(1, 3567)
         root = DTN.dtl(train, attrs, 0, depth)
-        if depth == 5:
+        if depth == 4:
             root.draw()
         correct = 0
         for i in test:
@@ -195,3 +197,5 @@ if __name__ == "__main__":
     plt.plot(X, test_accuracy, color="blue", linewidth=2.5, linestyle="-", label="test")
     plt.plot(X, train_accuracy, color="red", linewidth=2.5, linestyle="-", label="train")
     plt.legend(loc='upper left', frameon=False)
+    plt.grid()
+    plt.savefig('accuracy.png')
