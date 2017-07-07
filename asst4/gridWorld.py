@@ -1,7 +1,7 @@
 import numpy as np
 
 # The function gridWorld returns the transition function T and reward function M
-def gridWorld():
+def gridWorld(a, b):
 
     # Grid world layout:
     #
@@ -57,13 +57,13 @@ def gridWorld():
     # it stays in its current location.
 
     # transition parameters
-    a = 0.8  # intended move
-    b = 0.1  # lateral move
+    a = a  # intended move
+    b = b  # lateral move
 
     # up (a = 0)
 
-    T[0,1,0] = a+b
-    T[0,2,0] = b
+    T[0,0,0] = a+b
+    T[0,1,0] = b
 
     T[1,0,0] = b
     T[1,1,0] = a
@@ -189,8 +189,8 @@ def gridWorld():
     
     # left (a = 2)
 
-    T[0,1,2] = a+b
-    T[0,5,2] = b
+    T[0,0,2] = a+b
+    T[0,4,2] = b
     
     T[1,1,2] = b
     T[1,0,2] = a
