@@ -32,6 +32,16 @@ class PoleAgent(object):
         b3 = tf.Variable(tf.random_uniform([2], minval=-1.0, maxval=1.0))
         self.output = tf.matmul(l2, w3) + b3
 
+        t_w1 = tf.Variable(tf.random_uniform([4, 24], minval=-1.0, maxval=1.0))
+        t_b1 = tf.Variable(tf.random_uniform([24], minval=-1.0, maxval=1.0))
+        t_l1 = tf.nn.relu(tf.matmul(self.input, w1) + b1)
+        t_w2 = tf.Variable(tf.random_uniform([24, 24], minval=-1.0, maxval=1.0))
+        t_b2 = tf.Variable(tf.random_uniform([24], minval=-1.0, maxval=1.0))
+        t_l2 = tf.nn.relu(tf.matmul(l1, w2) + b2)
+        t_w3 = tf.Variable(tf.random_uniform([24, 2], minval=-1.0, maxval=1.0))
+        t_b3 = tf.Variable(tf.random_uniform([2], minval=-1.0, maxval=1.0))
+        self.q_target = tf.matmul(l2, w3) + b3
+
         self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.output))
         self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.loss)
 
