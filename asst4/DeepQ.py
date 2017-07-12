@@ -62,7 +62,12 @@ class PoleAgent(object):
     def train(self, batch_size=100):
         if self.learn_counter >= self.update_target_number:
             self.learn_counter = 0
-
+            self.t_w1 = tf.assign(self.t_w1, self.w1)
+            self.t_b1 = tf.assign(self.t_b1, self.b1)
+            self.t_w2 = tf.assign(self.t_w2, self.w2)
+            self.t_b2 = tf.assign(self.t_b2, self.b2)
+            self.t_w3 = tf.assign(self.t_w3, self.w3)
+            self.t_b3 = tf.assign(self.t_b3, self.b3)
 
 
         mini_batch = random.sample(self.buffer, batch_size)
