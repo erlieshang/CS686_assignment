@@ -47,8 +47,20 @@ class PoleAgent(object):
 
     def train_1(self):
         mini_batch = random.sample(self.buffer, self.batch_size)
+        states = list()
+        actions = list()
+        rewards = list()
         for state, action, reward, next_state, done in mini_batch:
-            self.train_0(state, action, reward, next_state, done)
+            states.append(state[0])
+            actions.append(int(action))
+            rewards.append(reward if done else reward + self.discount * np.amax(self.model.predict(next_state)[0]))
+        states = np.array(states)
+        actions = np.array(actions)
+        rewards = np.array(rewards)
+        target = self.model.predict(states, batch_size=self.batch_size)
+        index = range(self.batch_size)
+        target[index, actions] = rewards
+        self.model.fit(states, target, batch_size=self.batch_size, epochs=1, verbose=0)
 
     def train_2(self, state, action, reward, next_state, done):
         target = self.model.predict(state)
@@ -57,8 +69,20 @@ class PoleAgent(object):
 
     def train_3(self):
         mini_batch = random.sample(self.buffer, self.batch_size)
+        states = list()
+        actions = list()
+        rewards = list()
         for state, action, reward, next_state, done in mini_batch:
-            self.train_2(state, action, reward, next_state, done)
+            states.append(state[0])
+            actions.append(int(action))
+            rewards.append(reward if done else reward + self.discount * np.amax(self.target.predict(next_state)[0]))
+        states = np.array(states)
+        actions = np.array(actions)
+        rewards = np.array(rewards)
+        target = self.model.predict(states, batch_size=self.batch_size)
+        index = range(self.batch_size)
+        target[index, actions] = rewards
+        self.model.fit(states, target, batch_size=self.batch_size, epochs=1, verbose=0)
 
 
 def mode0():
@@ -71,7 +95,7 @@ def mode0():
             action = agent0.act(state)
             next_state, reward, done, _ = env.step(action)
             next_state = next_state.reshape(1, 4)
-            reward = reward if not done else -10
+            reward = reward if not done else 0
             agent0.train_0(state, action, reward, next_state, done)
             state = next_state
             if done:
@@ -89,7 +113,7 @@ def mode1():
             action = agent1.act(state)
             next_state, reward, done, _ = env.step(action)
             next_state = next_state.reshape(1, 4)
-            reward = reward if not done else -10
+            reward = reward if not done else 0
             agent1.remember(state, action, reward, next_state, done)
             if len(agent1.buffer) > agent1.batch_size:
                 agent1.train_1()
@@ -109,7 +133,7 @@ def mode2():
             action = agent2.act(state)
             next_state, reward, done, _ = env.step(action)
             next_state = next_state.reshape(1, 4)
-            reward = reward if not done else -10
+            reward = reward if not done else 0
             agent2.train_2(state, action, reward, next_state, done)
             state = next_state
             if done:
@@ -129,7 +153,7 @@ def mode3():
             action = agent3.act(state)
             next_state, reward, done, _ = env.step(action)
             next_state = next_state.reshape(1, 4)
-            reward = reward if not done else -10
+            reward = reward if not done else 0
             agent3.remember(state, action, reward, next_state, done)
             if len(agent3.buffer) > agent3.batch_size:
                 agent3.train_3()
